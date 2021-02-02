@@ -10,5 +10,5 @@ Show information of interest to the whole family on an eInk display near the ent
 
 2. Run the dockers
 
-     TODO
+     ./run.sh
 
