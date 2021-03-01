@@ -12,3 +12,13 @@ Show information of interest to the whole family on an eInk display near the ent
 
      ./run.sh
 
+# Notes:
+
+To get text directions control, you need to install `libraqm`:
+
+     sudo python3 -m pip uninstall PIL
+
+     python3 -m pip install --upgrade pip
+     python3 -m pip install --upgrade Pillow
+
+     TODO: This still doesn't work
