@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding:utf-8 -*-
 import sys
 import os
@@ -16,15 +16,25 @@ from urllib.parse import unquote
 
 logging.basicConfig(level=logging.DEBUG)
 
-def create_erev_shabbat_image(out_width, out_height):
+class Shabbat:
+    def __init__(self):
+        # TODO: read this data
+        self.parasha_name = "%D7%A7%D7%A8%D7%97"
+        self.early_shabbat = "18:00"
+        self.candle_lighting = "19:30"
+        self.mincha = "19:40"
+        self.shacharit = ["8:30", "6:45"]
+        self.shabbat_end = "20:27"
+
+def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     font24 = ImageFont.truetype(os.path.join(picdir, 'arial.ttf'), 24)
     font18 = ImageFont.truetype(os.path.join(picdir, 'arial.ttf'), 18)
     weather_font = ImageFont.truetype(os.path.join(picdir, 'Pe-icon-7-weather.ttf'),128)
     
     # Note: Image size is 528 width, and 880 height
 
-    image_black = Image.new('1', (out_height, out_width), 255)  # 255: clear the frame
-    image_red = Image.new('1', (out_height, out_width), 255)  # 255: clear the frame
+    image_black = Image.new('1', (height, width), 255)  # 255: clear the frame
+    image_red = Image.new('1', (height, width), 255)  # 255: clear the frame
     draw_black = ImageDraw.Draw(image_black)
     draw_red = ImageDraw.Draw(image_red)
     
@@ -34,8 +44,8 @@ def create_erev_shabbat_image(out_width, out_height):
     weather_sunny = unquote("%EE%98%8C%0A")
     draw_red.text((2, 0), weather_sunny, font = weather_font)
     
-    #hebrew_text = unquote("%D7%A9%D7%91%D7%AA%20%D7%A9%D7%9C%D7%95%D7%9D%21")
-    #draw_red.text((20, 50), hebrew_text, font = font18, fill = 0)
+    hebrew_text = unquote("%D7%A7%D7%91%D7%9C%D7%AA+%D7%A9%D7%91%D7%AA+%D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:" + " 17:50")
+    draw_red.text((20, 50), hebrew_text, font = font18, fill = 0)
     #draw_red.text((20, 50), hebrew_text, font = font18, fill = 0, direction = "rtl")
     
     #draw_red.line((10, 90, 60, 140), fill = 0)
@@ -50,14 +60,16 @@ def create_erev_shabbat_image(out_width, out_height):
     with Image.open(os.path.join(picdir,"black-white-landscape-5.jpg")) as im:
         image_black.paste(im)
 
-    image_black.save("black.png")
-    image_red.save("red.png")
     
     return (image_black, image_red)
 
 try:
-    image_black, image_red = create_erev_shabbat_image(880, 528);
-    #sys.exit(1)
+    shabbat = Shabbat()
+    image_black, image_red = create_erev_shabbat_image(width=528, height=880, data=shabbat);
+    
+    # XXX: Debug, save to file
+    image_black.save("black.png")
+    image_red.save("red.png")
     
     epd = epd7in5b_HD.EPD()
     # TODO: assert that epd.height == 880 and epd.width == 528
