@@ -10,7 +10,7 @@ if os.path.exists(libdir):
 import logging
 from waveshare_epd import epd7in5b_HD
 import time
-from PIL import Image,ImageDraw,ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor
 import traceback
 from urllib.parse import unquote 
 
@@ -32,20 +32,26 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     weather_font = ImageFont.truetype(os.path.join(picdir, 'Pe-icon-7-weather.ttf'),128)
     
     # Note: Image size is 528 width, and 880 height
+    
+    # TODO: create a single color image with black and red and white
 
-    image_black = Image.new('1', (height, width), 255)  # 255: clear the frame
-    image_red = Image.new('1', (height, width), 255)  # 255: clear the frame
-    draw_black = ImageDraw.Draw(image_black)
-    draw_red = ImageDraw.Draw(image_red)
+    out = Image.new('RGB', (width, height), ImageColor.getrgb("white"))  # 255: clear the frame
+    draw = ImageDraw.Draw(out)
+    
+    with Image.open(os.path.join(picdir,"black-white-landscape-5.jpg")) as im:
+        out.paste(im)
     
     #draw_black.text((2, 0), 'hello world', font = font18, fill = 0)
     #draw_black.text((2, 20), '7.5inch epd', font = font18, fill = 0)
     
-    weather_sunny = unquote("%EE%98%8C%0A")
-    draw_red.text((2, 0), weather_sunny, font = weather_font)
+    red = ImageColor.getrgb("red")
+    black = ImageColor.getrgb("black")
+
+    weather_sunny_icon = unquote("%EE%98%8C%0A")
+    draw.text((2, 0), weather_sunny_icon, font = weather_font, fill=red)
     
     hebrew_text = unquote("%D7%A7%D7%91%D7%9C%D7%AA+%D7%A9%D7%91%D7%AA+%D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:" + " 17:50")
-    draw_red.text((20, 50), hebrew_text, font = font18, fill = 0)
+    draw.text((20, 50), hebrew_text, font = font18, fill=red)
     #draw_red.text((20, 50), hebrew_text, font = font18, fill = 0, direction = "rtl")
     
     #draw_red.line((10, 90, 60, 140), fill = 0)
@@ -57,15 +63,26 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     #draw_black.rectangle((10, 150, 60, 200), fill = 0)
     #draw_black.chord((70, 150, 120, 200), 0, 360, fill = 0)
     
-    with Image.open(os.path.join(picdir,"black-white-landscape-5.jpg")) as im:
-        image_black.paste(im)
+    return out
 
-    
-    return (image_black, image_red)
+def extract_red_and_black(source:Image):
+    width, height = source.size
+    red = Image.new('1', (width, height), 255) # 255: clear the frame
+    black = Image.new('1', (width, height), 255) # 255: clear the frame
+    # TODO: maybe use OpenCV threshdoling to find just the black and just the red?
+    return red, black
 
 try:
     shabbat = Shabbat()
-    image_black, image_red = create_erev_shabbat_image(width=528, height=880, data=shabbat);
+    shabbat_image = create_erev_shabbat_image(width=528, height=880, data=shabbat);
+    
+    # XXX: Debug, save to file
+    shabbat_image.save("color.png")
+    
+    # XXX
+    sys.exit(1)
+    
+    image_black, image_red = extract_red_and_black(source=shabbat_image)
     
     # XXX: Debug, save to file
     image_black.save("black.png")
