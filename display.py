@@ -31,9 +31,7 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     font18 = ImageFont.truetype(os.path.join(picdir, 'arial.ttf'), 18)
     weather_font = ImageFont.truetype(os.path.join(picdir, 'Pe-icon-7-weather.ttf'),128)
     
-    # Note: Image size is 528 width, and 880 height
-    
-    # TODO: create a single color image with black and red and white
+    # create a single color image with black and red and white
 
     out = Image.new('RGB', (width, height), ImageColor.getrgb("white"))  # 255: clear the frame
     draw = ImageDraw.Draw(out)
@@ -67,26 +65,45 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
 
 def extract_red_and_black(source:Image):
     width, height = source.size
+    
+    color_red = ImageColor.getrgb("red")
+    color_black = ImageColor.getrgb("black")
     red = Image.new('1', (width, height), 255) # 255: clear the frame
     black = Image.new('1', (width, height), 255) # 255: clear the frame
-    # TODO: maybe use OpenCV threshdoling to find just the black and just the red?
+    for i,px in enumerate(source.getdata()):
+        #print(px)
+        x = i % width
+        y = int( i / width )
+        if x == 0:
+            print(f"line: {y} [{int(y/height)*10000)/100}%]")
+        if px == color_red:
+            red.putpixel(xy=(x, y), value=0)
+            black.putpixel(xy=(x, y), value=1)
+        elif px == color_black:
+            black.putpixel(xy=(x, y), value=0)
+            red.putpixel(xy=(x, y), value=1)
+        else:
+            black.putpixel(xy=(x, y), value=1)
+            red.putpixel(xy=(x, y), value=1)
     return red, black
 
 try:
     shabbat = Shabbat()
+    # Note: Image size is 528 width, and 880 height
+    
     shabbat_image = create_erev_shabbat_image(width=528, height=880, data=shabbat);
     
     # XXX: Debug, save to file
     shabbat_image.save("color.png")
-    
-    # XXX
-    sys.exit(1)
     
     image_black, image_red = extract_red_and_black(source=shabbat_image)
     
     # XXX: Debug, save to file
     image_black.save("black.png")
     image_red.save("red.png")
+    
+    # XXX
+    sys.exit(1)
     
     epd = epd7in5b_HD.EPD()
     # TODO: assert that epd.height == 880 and epd.width == 528
