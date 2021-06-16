@@ -70,22 +70,49 @@ def extract_red_and_black(source:Image):
     color_black = ImageColor.getrgb("black")
     red = Image.new('1', (width, height), 255) # 255: clear the frame
     black = Image.new('1', (width, height), 255) # 255: clear the frame
-    for i,px in enumerate(source.getdata()):
+    source_data = source.getdata()
+    black_data = list(source_data)
+    red_data = list(source_data)
+    for i,px in enumerate(source_data):
         #print(px)
         x = i % width
         y = int( i / width )
         percentage = (int((y*10000)/height)*1)/100
-        if x == 0:
+        if x == 0 and y % 10 == 0:
             print(f"line: {y} [{percentage}%]")
-        if px == color_red:
-            red.putpixel(xy=(x, y), value=0)
-            #black.putpixel(xy=(x, y), value=1)
-        elif px == color_black:
-            black.putpixel(xy=(x, y), value=0)
-            #red.putpixel(xy=(x, y), value=1)
-        #else:
-        #    black.putpixel(xy=(x, y), value=1)
-        #    red.putpixel(xy=(x, y), value=1)
+            
+        if y > 400:
+            break
+            
+        white_threshold = int(255 * 0.50)
+        black_threshold = int(255 * 0.25)
+        
+        is_white = False
+        is_black = False
+        is_red = False
+
+        r,g,b = px
+        if r >= white_threshold and g >= white_threshold and b >= white_threshold:
+            is_white = True
+        elif r <= black_threshold and g <= black_threshold and b <= black_threshold:
+            is_black = True
+        elif r >= white_threshold and (g <= black_threshold and b <= black_threshold) or (g == b):
+            is_red = True
+        else:
+            print(f"unrecognized px={px}")
+            
+        if is_white:
+            black_data[i] = 1
+            red_data[i] = 1
+        elif is_black:
+            black_data[i] = 0
+            red_data[i] = 1
+        else:
+            red_data[i] = 0
+            black_data[i] = 1
+            
+    red.putdata( red_data )
+    black.putdata( black_data )
     return red, black
 
 try:
@@ -97,7 +124,7 @@ try:
     # XXX: Debug, save to file
     shabbat_image.save("color.png")
     
-    image_black, image_red = extract_red_and_black(source=shabbat_image)
+    image_red, image_black = extract_red_and_black(source=shabbat_image)
     
     # XXX: Debug, save to file
     image_black.save("black.png")
