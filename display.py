@@ -13,6 +13,7 @@ import time
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor
 import traceback
 from urllib.parse import unquote 
+from types import SimpleNamespace
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -33,23 +34,22 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     
     # create a single color image with black and red and white
 
-    out = Image.new('RGB', (width, height), ImageColor.getrgb("white"))  # 255: clear the frame
-    draw = ImageDraw.Draw(out)
+    red_image = Image.new('1', (width, height), 255)  # 255: clear the frame
+    red_draw = ImageDraw.Draw(red_image)
+    black_image = Image.new('1', (width, height), 255)  # 255: clear the frame
+    black_draw = ImageDraw.Draw(black_image)
     
     with Image.open(os.path.join(picdir,"black-white-landscape-5.jpg")) as im:
-        out.paste(im)
+        black_image.paste(im)
     
     #draw_black.text((2, 0), 'hello world', font = font18, fill = 0)
     #draw_black.text((2, 20), '7.5inch epd', font = font18, fill = 0)
     
-    red = ImageColor.getrgb("red")
-    black = ImageColor.getrgb("black")
-
     weather_sunny_icon = unquote("%EE%98%8C%0A")
-    draw.text((2, 0), weather_sunny_icon, font = weather_font, fill=red)
+    red_draw.text((2, 0), weather_sunny_icon, font = weather_font, fill=0)
     
     hebrew_text = unquote("%D7%A7%D7%91%D7%9C%D7%AA+%D7%A9%D7%91%D7%AA+%D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:" + " 17:50")
-    draw.text((20, 50), hebrew_text, font = font18, fill=red)
+    red_draw.text((20, 50), hebrew_text, font = font18, fill=0)
     #draw_red.text((20, 50), hebrew_text, font = font18, fill = 0, direction = "rtl")
     
     #draw_red.line((10, 90, 60, 140), fill = 0)
@@ -61,77 +61,50 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     #draw_black.rectangle((10, 150, 60, 200), fill = 0)
     #draw_black.chord((70, 150, 120, 200), 0, 360, fill = 0)
     
-    return out
+    return SimpleNamespace(red=red_image, black=black_image)
 
-def extract_red_and_black(source:Image):
-    width, height = source.size
+def join_image(source_red:Image, source_black:Image):
+    width, height = source_red.size
     
     color_red = ImageColor.getrgb("red")
     color_black = ImageColor.getrgb("black")
-    red = Image.new('1', (width, height), 255) # 255: clear the frame
-    black = Image.new('1', (width, height), 255) # 255: clear the frame
-    source_data = source.getdata()
-    black_data = list(source_data)
-    red_data = list(source_data)
-    for i,px in enumerate(source_data):
-        #print(px)
+    color_white = ImageColor.getrgb("white")
+    out_image = Image.new('RGB', (width, height), color_white) # 255: clear the frame
+    red_data = source_red.getdata()
+    black_data = source_black.getdata()
+    out_data = list(out_image.getdata())
+    for i,px in enumerate(red_data):
         x = i % width
         y = int( i / width )
         percentage = (int((y*10000)/height)*1)/100
         if x == 0 and y % 10 == 0:
             print(f"line: {y} [{percentage}%]")
             
-        if y > 400:
-            break
-            
-        white_threshold = int(255 * 0.50)
-        black_threshold = int(255 * 0.25)
-        
-        is_white = False
-        is_black = False
-        is_red = False
-
-        r,g,b = px
-        if r >= white_threshold and g >= white_threshold and b >= white_threshold:
-            is_white = True
-        elif r <= black_threshold and g <= black_threshold and b <= black_threshold:
-            is_black = True
-        elif r >= white_threshold and (g <= black_threshold and b <= black_threshold) or (g == b):
-            is_red = True
+        if red_data[i] == 0:
+            out_data[i] = color_red
+        elif black_data[i] == 0:
+            out_data[i] = color_black
         else:
-            print(f"unrecognized px={px}")
+            out_data[i] = color_white
             
-        if is_white:
-            black_data[i] = 1
-            red_data[i] = 1
-        elif is_black:
-            black_data[i] = 0
-            red_data[i] = 1
-        else:
-            red_data[i] = 0
-            black_data[i] = 1
-            
-    red.putdata( red_data )
-    black.putdata( black_data )
-    return red, black
+    out_image.putdata( out_data )
+    return out_image
 
 try:
     shabbat = Shabbat()
     # Note: Image size is 528 width, and 880 height
     
-    shabbat_image = create_erev_shabbat_image(width=528, height=880, data=shabbat);
+    shabbat_image = create_erev_shabbat_image(width=528, height=880, data=shabbat)
     
     # XXX: Debug, save to file
-    shabbat_image.save("color.png")
+    shabbat_image.black.save("black.png")
+    shabbat_image.red.save("red.png")
     
-    image_red, image_black = extract_red_and_black(source=shabbat_image)
-    
-    # XXX: Debug, save to file
-    image_black.save("black.png")
-    image_red.save("red.png")
+    color_image = join_image( source_black=shabbat_image.black, source_red=shabbat_image.red )
     
     # XXX
-    sys.exit(1)
+    # XXX: Debug, save to file
+    color_image.save("color.png")
     
     epd = epd7in5b_HD.EPD()
     # TODO: assert that epd.height == 880 and epd.width == 528
@@ -140,7 +113,7 @@ try:
     epd.init()
     epd.Clear()
 
-    epd.display(epd.getbuffer(image_black), epd.getbuffer(image_red))
+    epd.display(epd.getbuffer(shabbat_image.black), epd.getbuffer(shabbat_image.red))
     time.sleep(2)
     
     #logging.info("Clear...")
