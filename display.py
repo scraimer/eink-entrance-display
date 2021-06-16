@@ -74,17 +74,18 @@ def extract_red_and_black(source:Image):
         #print(px)
         x = i % width
         y = int( i / width )
+        percentage = (int((y*10000)/height)*1)/100
         if x == 0:
-            print(f"line: {y} [{int(y/height)*10000)/100}%]")
+            print(f"line: {y} [{percentage}%]")
         if px == color_red:
             red.putpixel(xy=(x, y), value=0)
-            black.putpixel(xy=(x, y), value=1)
+            #black.putpixel(xy=(x, y), value=1)
         elif px == color_black:
             black.putpixel(xy=(x, y), value=0)
-            red.putpixel(xy=(x, y), value=1)
-        else:
-            black.putpixel(xy=(x, y), value=1)
-            red.putpixel(xy=(x, y), value=1)
+            #red.putpixel(xy=(x, y), value=1)
+        #else:
+        #    black.putpixel(xy=(x, y), value=1)
+        #    red.putpixel(xy=(x, y), value=1)
     return red, black
 
 try:
