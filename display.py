@@ -10,7 +10,7 @@ if os.path.exists(libdir):
 import logging
 from waveshare_epd import epd7in5b_HD
 import time
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor, ImageMath, ImageOps
 import traceback
 from urllib.parse import unquote 
 from types import SimpleNamespace
@@ -26,6 +26,9 @@ class Shabbat:
         self.mincha = "19:40"
         self.shacharit = ["8:30", "6:45"]
         self.shabbat_end = "20:27"
+
+def reverse(source:str):
+    return source[::-1]
 
 def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     font24 = ImageFont.truetype(os.path.join(picdir, 'arial.ttf'), 24)
@@ -48,7 +51,7 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     weather_sunny_icon = unquote("%EE%98%8C%0A")
     red_draw.text((2, 0), weather_sunny_icon, font = weather_font, fill=0)
     
-    hebrew_text = unquote("%D7%A7%D7%91%D7%9C%D7%AA+%D7%A9%D7%91%D7%AA+%D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:" + " 17:50")
+    hebrew_text = reverse(unquote("%D7%A7%D7%91%D7%9C%D7%AA+%D7%A9%D7%91%D7%AA+%D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:")) + " 17:50"
     red_draw.text((20, 50), hebrew_text, font = font18, fill=0)
     #draw_red.text((20, 50), hebrew_text, font = font18, fill = 0, direction = "rtl")
     
@@ -64,6 +67,22 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     return SimpleNamespace(red=red_image, black=black_image)
 
 def join_image(source_red:Image, source_black:Image):
+    red_rgb = ImageMath.eval("convert(a,'RGB')", a=source_red)
+    red_mask, _, _ = red_rgb.split()
+    red_inverted = ImageOps.invert(red_rgb)
+    red_r,red_g,red_b = red_inverted.split()
+    #zero = ImageMath.eval("convert(band ^ band,'L')", band=red_g)
+
+    black_r, black_g, black_b = (ImageMath.eval("convert(img,'RGB')", img=source_black)).split()
+
+    out_r = ImageMath.eval("convert(red | black, 'L')", red=red_r, black=black_r, red_mask=red_mask)
+    out_b = ImageMath.eval("convert((black & red_mask), 'L')", red=red_b, black=black_b, red_mask=red_mask)
+    out_g = ImageMath.eval("convert((black & red_mask), 'L')", red=red_g, black=black_g, red_mask=red_mask)
+
+    out = Image.merge("RGB", (out_r,out_b,out_g))
+    return out
+
+def join_image_slow(source_red:Image, source_black:Image):
     width, height = source_red.size
     
     color_red = ImageColor.getrgb("red")
@@ -90,7 +109,7 @@ def join_image(source_red:Image, source_black:Image):
     out_image.putdata( out_data )
     return out_image
 
-try:
+def make_image():
     shabbat = Shabbat()
     # Note: Image size is 528 width, and 880 height
     
@@ -106,30 +125,43 @@ try:
     # XXX: Debug, save to file
     color_image.save("color.png")
     
-    epd = epd7in5b_HD.EPD()
-    # TODO: assert that epd.height == 880 and epd.width == 528
+    return shabbat_image
 
-    logging.info("init and Clear")
-    epd.init()
-    epd.Clear()
+def display(image):
+    try:
+        epd = epd7in5b_HD.EPD()
+        # TODO: assert that epd.height == 880 and epd.width == 528
 
-    epd.display(epd.getbuffer(shabbat_image.black), epd.getbuffer(shabbat_image.red))
-    time.sleep(2)
-    
-    #logging.info("Clear...")
-    #epd.init()
-    #epd.Clear()
+        logging.info("init and Clear")
+        epd.init()
+        epd.Clear()
 
-    logging.info("Goto Sleep...")
-    epd.sleep()
-    time.sleep(3)
-    
-    epd.Dev_exit()
-    
-except IOError as e:
-    logging.info(e)
-    
-except KeyboardInterrupt:    
-    logging.info("ctrl + c:")
-    epd7in5b_HD.epdconfig.module_exit()
-    exit()
+        epd.display(epd.getbuffer(image.black), epd.getbuffer(image.red))
+        time.sleep(2)
+        
+        #logging.info("Clear...")
+        #epd.init()
+        #epd.Clear()
+
+        logging.info("Goto Sleep...")
+        epd.sleep()
+        time.sleep(3)
+        
+        epd.Dev_exit()
+        
+    except IOError as e:
+        logging.info(e)
+        
+    except KeyboardInterrupt:    
+        logging.info("ctrl + c:")
+        epd7in5b_HD.epdconfig.module_exit()
+        exit()
+ 
+def main():
+    image = make_image()
+    # XXX remove exit
+    sys.exit(0)
+    display(image)
+        
+if __name__ == "__main__":
+    main()
