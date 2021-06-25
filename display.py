@@ -47,7 +47,7 @@ def display(image):
 def main():
     image = make_image()
     # XXX remove exit
-    sys.exit(0)
+    #sys.exit(0)
     display(image)
         
 if __name__ == "__main__":

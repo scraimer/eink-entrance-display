@@ -40,10 +40,20 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     #draw_black.text((2, 20), '7.5inch epd', font = font18, fill = 0)
     
     weather_sunny_icon = unquote("%EE%98%8C%0A")
-    red_draw.text((2, 0), weather_sunny_icon, font = weather_font, fill=0)
+    red_draw.text((432, 700), weather_sunny_icon, font = weather_font, fill=0)
     
-    hebrew_text = reverse(unquote("%D7%A7%D7%91%D7%9C%D7%AA+%D7%A9%D7%91%D7%AA+%D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:")) + " 17:50"
-    red_draw.text((20, 50), hebrew_text, font = font18, fill=0)
+    y = 50
+    line_height = 20
+    hebrew_text = reverse(unquote("%D7%A7%D7%91%D7%9C%D7%AA %D7%A9%D7%91%D7%AA %D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:")) + " 18:00"
+    red_draw.text((20, y), hebrew_text, font = font18, fill=0)
+    y = y + line_height
+    hebrew_text = reverse(unquote("%D7%94%D7%93%D7%9C%D7%A7%D7%AA%20%D7%A0%D7%A8%D7%95%D7%AA")) + " 19:34"
+    red_draw.text((20, y), hebrew_text, font = font18, fill=0)
+    y = y + line_height
+    hebrew_text = reverse(unquote("%D7%A2%D7%A8%D7%91%D7%99%D7%AA:")) + " 20:31"
+    red_draw.text((20, y), hebrew_text, font = font18, fill=0)
+    
+
     #draw_red.text((20, 50), hebrew_text, font = font18, fill = 0, direction = "rtl")
     
     #draw_red.line((10, 90, 60, 140), fill = 0)
