@@ -2,7 +2,7 @@
 import sys
 import os
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor, ImageMath, ImageOps
-from urllib.parse import unquote 
+from urllib.parse import unquote, quote
 from types import SimpleNamespace
 
 
@@ -11,19 +11,19 @@ picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
 class Shabbat:
     def __init__(self):
         # TODO: read this data
-        self.parasha_name = "%D7%A7%D7%A8%D7%97"
+        self.parasha_name = quote("פנחס")
         self.early_shabbat = "18:00"
-        self.candle_lighting = "19:30"
-        self.mincha = "19:40"
+        self.candle_lighting = "19:34"
+        self.mincha = "19:44"
         self.shacharit = ["8:30", "6:45"]
-        self.shabbat_end = "20:27"
+        self.shabbat_end = "20:31"
 
 def reverse(source:str):
     return source[::-1]
 
 def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
-    font24 = ImageFont.truetype(os.path.join(picdir, 'arial.ttf'), 24)
-    font18 = ImageFont.truetype(os.path.join(picdir, 'arial.ttf'), 18)
+    font_title = ImageFont.truetype(os.path.join(picdir, 'arial.ttf'), 54)
+    font_text = ImageFont.truetype(os.path.join(picdir, 'arial.ttf'), 40)
     weather_font = ImageFont.truetype(os.path.join(picdir, 'Pe-icon-7-weather.ttf'),128)
     
     # create a single color image with black and red and white
@@ -34,27 +34,37 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     black_draw = ImageDraw.Draw(black_image)
     
     with Image.open(os.path.join(picdir,"black-white-landscape-5.jpg")) as im:
-        black_image.paste(im)
+        black_image.paste(im, (0,int(height/2)))
     
-    #draw_black.text((2, 0), 'hello world', font = font18, fill = 0)
-    #draw_black.text((2, 20), '7.5inch epd', font = font18, fill = 0)
+    #draw_black.text((2, 0), 'hello world', font = font_text, fill = 0)
+    #draw_black.text((2, 20), '7.5inch epd', font = font_text, fill = 0)
     
     weather_sunny_icon = unquote("%EE%98%8C%0A")
     red_draw.text((432, 700), weather_sunny_icon, font = weather_font, fill=0)
     
     y = 50
-    line_height = 20
-    hebrew_text = reverse(unquote("%D7%A7%D7%91%D7%9C%D7%AA %D7%A9%D7%91%D7%AA %D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:")) + " 18:00"
-    red_draw.text((20, y), hebrew_text, font = font18, fill=0)
-    y = y + line_height
-    hebrew_text = reverse(unquote("%D7%94%D7%93%D7%9C%D7%A7%D7%AA%20%D7%A0%D7%A8%D7%95%D7%AA")) + " 19:34"
-    red_draw.text((20, y), hebrew_text, font = font18, fill=0)
-    y = y + line_height
-    hebrew_text = reverse(unquote("%D7%A2%D7%A8%D7%91%D7%99%D7%AA:")) + " 20:31"
-    red_draw.text((20, y), hebrew_text, font = font18, fill=0)
+    x = 20
+    
+    hebrew_text = reverse(unquote("%D7%A4%D7%A8%D7%A9%D7%AA") + " " + unquote(data.parasha_name))
+    red_draw.text((x, y), hebrew_text, font = font_title, fill=0)
+    box = font_title.getbbox(hebrew_text)
+    y = y + box[3]
+
+    hebrew_text = data.early_shabbat + " " + reverse(unquote("%D7%A7%D7%91%D7%9C%D7%AA %D7%A9%D7%91%D7%AA %D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:"))
+    red_draw.text((x, y), hebrew_text, font = font_text, fill=0)
+    box = font_text.getbbox(hebrew_text)
+    y = y + box[3]
+    
+    hebrew_text =  data.candle_lighting + " " + reverse(unquote("%D7%94%D7%93%D7%9C%D7%A7%D7%AA%20%D7%A0%D7%A8%D7%95%D7%AA"))
+    red_draw.text((x, y), hebrew_text, font = font_text, fill=0)
+    box = font_text.getbbox(hebrew_text)
+    y = y + box[3]
+    
+    hebrew_text = data.shabbat_end + " " + reverse(unquote("%D7%A2%D7%A8%D7%91%D7%99%D7%AA:"))
+    red_draw.text((x, y), hebrew_text, font = font_text, fill=0)
     
 
-    #draw_red.text((20, 50), hebrew_text, font = font18, fill = 0, direction = "rtl")
+    #draw_red.text((20, 50), hebrew_text, font = font_text, fill = 0, direction = "rtl")
     
     #draw_red.line((10, 90, 60, 140), fill = 0)
     #draw_red.line((60, 90, 10, 140), fill = 0)
