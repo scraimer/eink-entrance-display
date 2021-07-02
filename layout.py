@@ -45,24 +45,18 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     y = 50
     x = 20
     
-    hebrew_text = reverse(unquote("%D7%A4%D7%A8%D7%A9%D7%AA") + " " + unquote(data.parasha_name))
-    red_draw.text((x, y), hebrew_text, font = font_title, fill=0)
-    box = font_title.getbbox(hebrew_text)
-    y = y + box[3]
-
-    hebrew_text = data.early_shabbat + " " + reverse(unquote("%D7%A7%D7%91%D7%9C%D7%AA %D7%A9%D7%91%D7%AA %D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:"))
-    red_draw.text((x, y), hebrew_text, font = font_text, fill=0)
-    box = font_text.getbbox(hebrew_text)
-    y = y + box[3]
+    lines = [
+        {"font": font_title, "text": reverse(unquote("%D7%A4%D7%A8%D7%A9%D7%AA") + " " + unquote(data.parasha_name))},
+        {"font": font_text,  "text": data.early_shabbat + " " + reverse(unquote("%D7%A7%D7%91%D7%9C%D7%AA %D7%A9%D7%91%D7%AA %D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:"))},
+        {"font": font_text,  "text": data.candle_lighting + " " + reverse(unquote("%D7%94%D7%93%D7%9C%D7%A7%D7%AA%20%D7%A0%D7%A8%D7%95%D7%AA"))},
+        {"font": font_text,  "text": data.shabbat_end + " " + reverse(unquote("%D7%A2%D7%A8%D7%91%D7%99%D7%AA:"))},
+    ]
     
-    hebrew_text =  data.candle_lighting + " " + reverse(unquote("%D7%94%D7%93%D7%9C%D7%A7%D7%AA%20%D7%A0%D7%A8%D7%95%D7%AA"))
-    red_draw.text((x, y), hebrew_text, font = font_text, fill=0)
-    box = font_text.getbbox(hebrew_text)
-    y = y + box[3]
-    
-    hebrew_text = data.shabbat_end + " " + reverse(unquote("%D7%A2%D7%A8%D7%91%D7%99%D7%AA:"))
-    red_draw.text((x, y), hebrew_text, font = font_text, fill=0)
-    
+    for line in lines:
+        box = line["font"].getbbox(line["text"])
+        actual_x = width - x - box[2]
+        red_draw.text((actual_x, y), line["text"], font = line["font"], fill=0)
+        y = y + box[3]
 
     #draw_red.text((20, 50), hebrew_text, font = font_text, fill = 0, direction = "rtl")
     
