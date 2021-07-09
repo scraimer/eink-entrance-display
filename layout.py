@@ -4,6 +4,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor, ImageMath, ImageOps
 from urllib.parse import unquote, quote
 from types import SimpleNamespace
+import scrape
 
 
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
@@ -11,12 +12,12 @@ picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
 class Shabbat:
     def __init__(self):
         # TODO: read this data
-        self.parasha_name = quote("פנחס")
+        self.parasha_name = quote("מטות-מסעי")
         self.early_shabbat = "18:00"
-        self.candle_lighting = "19:34"
-        self.mincha = "19:44"
+        self.candle_lighting = "19:33"
+        self.mincha = "19:43"
         self.shacharit = ["8:30", "6:45"]
-        self.shabbat_end = "20:31"
+        self.shabbat_end = "20:29"
 
 def reverse(source:str):
     return source[::-1]
@@ -46,11 +47,17 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     x = 20
     
     lines = [
-        {"font": font_title, "text": reverse(unquote("%D7%A4%D7%A8%D7%A9%D7%AA") + " " + unquote(data.parasha_name))},
-        {"font": font_text,  "text": data.early_shabbat + " " + reverse(unquote("%D7%A7%D7%91%D7%9C%D7%AA %D7%A9%D7%91%D7%AA %D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:"))},
-        {"font": font_text,  "text": data.candle_lighting + " " + reverse(unquote("%D7%94%D7%93%D7%9C%D7%A7%D7%AA%20%D7%A0%D7%A8%D7%95%D7%AA"))},
-        {"font": font_text,  "text": data.shabbat_end + " " + reverse(unquote("%D7%A2%D7%A8%D7%91%D7%99%D7%AA:"))},
+        #{"font": font_title, "text": reverse(unquote("%D7%A4%D7%A8%D7%A9%D7%AA") + " " + unquote(data.parasha_name))},
+        #{"font": font_text,  "text": data.early_shabbat + " " + reverse(unquote("%D7%A7%D7%91%D7%9C%D7%AA %D7%A9%D7%91%D7%AA %D7%9E%D7%95%D7%A7%D7%93%D7%9E%D7%AA:"))},
+        #{"font": font_text,  "text": data.candle_lighting + " " + reverse(unquote("%D7%94%D7%93%D7%9C%D7%A7%D7%AA%20%D7%A0%D7%A8%D7%95%D7%AA"))},
+        #{"font": font_text,  "text": data.shabbat_end + " " + reverse(unquote("%D7%A2%D7%A8%D7%91%D7%99%D7%AA:"))},
     ]
+
+    shabbat_items = scrape.scrape_shabbat_items()
+    lines.append({"font":font_title, "text":reverse(shabbat_items['parasha_name'])})
+    for title,times in shabbat_items['times'].items():
+        times = [t if t[-3]==':' else reverse(t) for t in times]
+        lines.append({"font":font_text, "text": f"{', '.join(times)} :{reverse(title)}"})
     
     for line in lines:
         box = line["font"].getbbox(line["text"])
