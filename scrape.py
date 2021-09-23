@@ -40,11 +40,11 @@ def extract_shabbat_times(html:str):
                 continue
             elif (v[-3] == ':') or (v == TIME_AFTER_SHUL):
                 times.append(v)
-            else:
+            elif len(v) > 0:
                 names.append(v)
 
         if len(names) != 1:
-            print(f"Warning: Expected 1 name but found {len(names)} names in the row: {row}")
+            print(f"Warning: Expected 1 name but found {len(names)} names (names={names}) in the row: {row}")
             continue
 
         key = names[0]
@@ -64,3 +64,5 @@ def scrape_shabbat_items():
     html = r.text
     return extract_shabbat_times(html)
 
+if __name__ == "__main__":
+    scrape_shabbat_items()
