@@ -32,6 +32,9 @@ def extract_shabbat_times(html:str):
     TIME_AFTER_SHUL = 'אחרי התפילה'
     rows_keyed = {}
     for row in rows:
+        if len(row) == 1 and len(row[0]) == 0:
+            continue
+
         times = []
         names = []
         for v in row:
@@ -44,8 +47,11 @@ def extract_shabbat_times(html:str):
                 names.append(v)
 
         if len(names) != 1:
-            print(f"Warning: Expected 1 name but found {len(names)} names (names={names}) in the row: {row}")
-            continue
+            if len(names) == 2:
+                names = [names[0]]
+            else:
+                print(f"Warning: Expected 1 name but found {len(names)} names (names={names}) in the row: {row} (len={len(row)})")
+                continue
 
         key = names[0]
         if key in rows_keyed:
