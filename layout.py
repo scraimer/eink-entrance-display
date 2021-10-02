@@ -27,32 +27,41 @@ def create_erev_shabbat_image(width:int, height:int):
     font_title = ImageFont.truetype(str(picdir / 'arial.ttf'), 54)
     font_text = ImageFont.truetype(str(picdir / 'arial.ttf'), 40)
     weather_font = ImageFont.truetype(str(picdir / 'Pe-icon-7-weather.ttf'),128)
-    
+
     # create a single color image with black and red and white
 
     red_image = Image.new('1', (width, height), 255)  # 255: clear the frame
     red_draw = ImageDraw.Draw(red_image)
     black_image = Image.new('1', (width, height), 255)  # 255: clear the frame
     black_draw = ImageDraw.Draw(black_image)
-    
+
     with Image.open(picdir / "black-white-landscape-5.jpg") as im:
         black_image.paste(im, (0,int(height/2)))
-    
+
     weather_sunny_icon = unquote("%EE%98%8C%0A")
     red_draw.text((432, 700), weather_sunny_icon, font = weather_font, fill=0)
-    
+
     y = -15
     x = 0
-    
+    LINE_SPACING = 3
+
     lines = []
     shabbat_items = scrape.scrape_shabbat_items()
-    lines.append({"font":font_title, "text":reverse(shabbat_items['parasha_name']), "center": True})
+    lines.append({
+        "font":font_title,
+        "text":reverse(shabbat_items['parasha_name']),
+        "center": True,
+        "bottom-margin": LINE_SPACING * 3
+    })
     for title,times in shabbat_items['times'].items():
         if title in titles_to_remove:
             continue
         times = [t if t[-3]==':' else reverse(t) for t in times]
         lines.append({"font":font_text, "text": f"{', '.join(sorted(times, reverse=True))} :{reverse(title)}"})
-    
+
+    boxes = [line["font"].getbbox(line["text"]) for line in lines]
+    max_line_height = max([box[3] - box[1] for box in boxes])
+
     for line in lines:
         box = line["font"].getbbox(line["text"])
         if line.get("center", False):
@@ -60,8 +69,10 @@ def create_erev_shabbat_image(width:int, height:int):
         else:
             actual_x = width - x - box[2]
         red_draw.text((actual_x, y), line["text"], font = line["font"], fill=0)
-        y = y + box[3]
-    
+        y = y + max_line_height + LINE_SPACING
+        if line.get("bottom-margin", False):
+            y = y + line["bottom-margin"]
+
     #draw_red.line((10, 90, 60, 140), fill = 0)
     #draw_red.line((60, 90, 10, 140), fill = 0)
     #draw_red.rectangle((10, 90, 60, 500), outline = 0)
@@ -70,9 +81,9 @@ def create_erev_shabbat_image(width:int, height:int):
     #draw_black.arc((70, 90, 120, 140), 0, 360, fill = 0)
     #draw_black.rectangle((10, 150, 60, 200), fill = 0)
     #draw_black.chord((70, 150, 120, 200), 0, 360, fill = 0)
-    
+
     paste_red_and_black_image(name="sneaker", red_image=red_image, black_image=black_image, position=(30,height - 50))
-    
+
     return SimpleNamespace(red=red_image, black=black_image)
 
 def join_image(source_red:Image, source_black:Image):
@@ -95,10 +106,10 @@ def make_image():
     # Note: Image size is 528 width, and 880 height
     shabbat_image = create_erev_shabbat_image(width=528, height=880)
     color_image = join_image( source_black=shabbat_image.black, source_red=shabbat_image.red )
-    
+
     # XXX: Debug, save to file
     color_image.save("color.png")
-    
+
     return shabbat_image
 
 
