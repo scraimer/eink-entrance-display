@@ -7,17 +7,12 @@ from types import SimpleNamespace
 import scrape
 from pathlib import Path
 
-picdir = Path(os.path.dirname(os.path.realpath(__file__))) / 'pic'
+titles_to_remove = [
+    unquote('%D7%94%D7%A6%D7%92%D7%AA%20%D7%99%D7%9C%D7%93%D7%99%D7%9D'),
+    unquote('%D7%A9%D7%99%D7%A2%D7%95%D7%A8%20%D7%9C%D7%9E%D7%91%D7%95%D7%92%D7%A8%D7%99%D7%9D'),
+]
 
-class Shabbat:
-    def __init__(self):
-        # TODO: read this data
-        self.parasha_name = quote("מטות-מסעי")
-        self.early_shabbat = "18:00"
-        self.candle_lighting = "19:33"
-        self.mincha = "19:43"
-        self.shacharit = ["8:30", "6:45"]
-        self.shabbat_end = "20:29"
+picdir = Path(os.path.dirname(os.path.realpath(__file__))) / 'pic'
 
 def reverse(source:str):
     return source[::-1]
@@ -28,7 +23,7 @@ def paste_red_and_black_image(name:str, red_image:Image, black_image:Image, posi
     with Image.open(picdir / f"{name}-black.png") as im:
         black_image.paste(im, position)
 
-def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
+def create_erev_shabbat_image(width:int, height:int):
     font_title = ImageFont.truetype(str(picdir / 'arial.ttf'), 54)
     font_text = ImageFont.truetype(str(picdir / 'arial.ttf'), 40)
     weather_font = ImageFont.truetype(str(picdir / 'Pe-icon-7-weather.ttf'),128)
@@ -53,6 +48,8 @@ def create_erev_shabbat_image(width:int, height:int, data:Shabbat):
     shabbat_items = scrape.scrape_shabbat_items()
     lines.append({"font":font_title, "text":reverse(shabbat_items['parasha_name']), "center": True})
     for title,times in shabbat_items['times'].items():
+        if title in titles_to_remove:
+            continue
         times = [t if t[-3]==':' else reverse(t) for t in times]
         lines.append({"font":font_text, "text": f"{', '.join(sorted(times, reverse=True))} :{reverse(title)}"})
     
@@ -95,9 +92,8 @@ def join_image(source_red:Image, source_black:Image):
     return out
 
 def make_image():
-    shabbat = Shabbat()
     # Note: Image size is 528 width, and 880 height
-    shabbat_image = create_erev_shabbat_image(width=528, height=880, data=shabbat)
+    shabbat_image = create_erev_shabbat_image(width=528, height=880)
     color_image = join_image( source_black=shabbat_image.black, source_red=shabbat_image.red )
     
     # XXX: Debug, save to file
