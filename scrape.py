@@ -57,8 +57,11 @@ def extract_shabbat_times(html:str):
         if key in rows_keyed:
             print(f"Warning: Duplicate key: {key} from row {row}")
 
+        if len(times) == 0:
+            continue
+
         rows_keyed[key] = times
-        
+
     return {'parasha_name': parasha_name, 'times': rows_keyed}
 
 def scrape_shabbat_items():
