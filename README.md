@@ -45,4 +45,12 @@ To get text directions control, you need to install `libraqm`:
 
      TODO: This still doesn't work
 
+# Add to cron
+
+Add the following lines to a `sudo`-enabled user:
+
+	# m h  dom mon dow   command
+	0 8 * * fri    /home/pi/eink-entrance-display/update-display.sh
+	0 14 * * fri   /home/pi/eink-entrance-display/update-display.sh
+
 TODO: Move all this into a Docker image using the Dockerfile, for easy setup
