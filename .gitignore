@@ -2,3 +2,7 @@ removed
 red.png
 black.png
 color.png
+logs
+__pycache__/
+lib/waveshare_epd/epd7in5b_HD.pyc
+.ipynb_checkpoints/
