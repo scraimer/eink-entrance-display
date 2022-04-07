@@ -7,6 +7,11 @@ def extract_shabbat_times(html:str):
     html = html.replace(' dir="rtl" style="font-size:25px; line-height:1.2em"','') \
         .replace(' dir="rtl" style="font-size:25px; line-height:1.2em; text-align:justify"','')
     soup = BeautifulSoup(html, 'html.parser')
+    #site_content = soup.find("div", {"id": "SITE_CONTAINER"})
+    site_content = soup.find("main", {"id": "PAGES_CONTAINER"})
+    ps = site_content.find_all("p")
+    for p in ps:
+        print(p.getText())
     content = soup.find('h1').find_parent('div').find_parent('div')
     # TODO: assert content.data-testid == 'mesh-container-content'
 
@@ -74,4 +79,4 @@ def scrape_shabbat_items():
     return extract_shabbat_times(html)
 
 if __name__ == "__main__":
-    scrape_shabbat_items()
+    print(scrape_shabbat_items())
