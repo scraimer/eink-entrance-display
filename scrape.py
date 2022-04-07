@@ -4,35 +4,59 @@ import sys
 import requests
 
 def extract_shabbat_times(html:str):
-    html = html.replace(' dir="rtl" style="font-size:25px; line-height:1.2em"','') \
-        .replace(' dir="rtl" style="font-size:25px; line-height:1.2em; text-align:justify"','')
     soup = BeautifulSoup(html, 'html.parser')
-    #site_content = soup.find("div", {"id": "SITE_CONTAINER"})
-    site_content = soup.find("main", {"id": "PAGES_CONTAINER"})
-    ps = site_content.find_all("p")
-    for p in ps:
-        print(p.getText())
-    content = soup.find('h1').find_parent('div').find_parent('div')
-    # TODO: assert content.data-testid == 'mesh-container-content'
 
-    parasha_name_elems = content.find('h1').find_parent('div').find_next_sibling('div')
-    parasha_name = parasha_name_elems.get_text()
+    # Since I've no idea on how the tags are laid out, I'm going to focus on
+    # two constants:
+    # * "8:30"
+    # * The words "צאת השבת"
+    eight_thirty = soup.find(lambda tag:tag.name=="span" and "8:30" in tag.text)
+    eight_thirty_div = eight_thirty.find_parent("div")
+    #first_column_div = eight_thirty_div.prev_sibling
+    first_column_div = eight_thirty_div
+    print (first_column_div)
+    END_OF_SHABBAT_TEXT = "צאת השבת וערבית"
+    shabbat_end = soup.find(lambda tag:tag.name=="span" and END_OF_SHABBAT_TEXT in tag.text)
+    end_column_div = shabbat_end.find_parent("div")
 
-    col1 = parasha_name_elems.find_next_sibling('div')
-    col2 = col1.find_next_sibling('div')
-    col3 = col2.find_next_sibling('div')
-    col4 = col3.find_next_sibling('div')
+    parent = first_column_div.parent
+    assert parent == end_column_div.parent
 
-    cols = [col1, col2, col3, col4]
-    col_as_lines = [col.get_text().split('\n') for col in cols]
-    height = max([len(col) for col in col_as_lines])
+    # Find all the children between the first and last columns
+    cols = []
+    started = False
+    for col in parent.children:
+        if (not started) and (col == first_column_div):
+            started = True
+        if started:
+            cols.append(col)
+        if col == end_column_div:
+            break
 
-    # Pivot the data from columns to rows
+    # Turn the columns into lists of texts
+    text_cols = []
+    for col in cols:
+        texts = col.findAll(text=True)
+        for t in texts:
+            t = t.strip()
+            #print(f"'>{t}<'")
+        text_cols.append([t.strip().replace('\u200b','') for t in col.findAll(text=True)])
+
+    # Pivot the columns into rows
+    rows_count = max([len(col) for col in cols])
     rows = []
-    for i in range(height):
-        row = [col[i] for col in col_as_lines if len(col) > i]
-        row = [v.replace('\u200b','').replace('\xa0','') for v in row]
+    for i in range(0,rows_count):
+        row = [col[i] if i < len(col) else '' for col in text_cols]
+        # Skip rows of empty data
+        if all([not x for x in row]):
+            continue
         rows.append(row)
+
+
+    ### This is the part that hasn't been modified
+    #parasha_name_elems = content.find('h1').find_parent('div').find_next_sibling('div')
+    #parasha_name = parasha_name_elems.get_text()
+    parasha_name = "TODO"
 
     TIME_AFTER_SHUL = 'אחרי התפילה'
     rows_keyed = {}
