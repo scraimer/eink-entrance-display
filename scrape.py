@@ -52,11 +52,16 @@ def extract_shabbat_times(html:str):
             continue
         rows.append(row)
 
+    # Look for the word "פרשת "
+    PARASHAT_TEXT = "פרשת "
+    parasha_elem = soup.find(lambda tag:tag.name=="span" and PARASHAT_TEXT in tag.text)
+    title_div = parasha_elem.find_parent("div")
+    title_lines = title_div.findAll(text=True)
+    title_lines = [x for x in title_lines if x.strip()]
+    parasha_name = ' '.join(title_lines)
+    print(f"Parasha Name: {parasha_name}")
 
     ### This is the part that hasn't been modified
-    #parasha_name_elems = content.find('h1').find_parent('div').find_next_sibling('div')
-    #parasha_name = parasha_name_elems.get_text()
-    parasha_name = "TODO"
 
     TIME_AFTER_SHUL = 'אחרי התפילה'
     rows_keyed = {}
