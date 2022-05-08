@@ -6,6 +6,7 @@ from urllib.parse import unquote, quote
 from types import SimpleNamespace
 import scrape
 from pathlib import Path
+import datetime
 
 titles_to_remove = [
     unquote('%D7%94%D7%A6%D7%92%D7%AA%20%D7%99%D7%9C%D7%93%D7%99%D7%9D'),
@@ -83,6 +84,8 @@ def create_erev_shabbat_image(width:int, height:int):
     #draw_black.chord((70, 150, 120, 200), 0, 360, fill = 0)
 
     paste_red_and_black_image(name="sneaker", red_image=red_image, black_image=black_image, position=(30,height - 50))
+    
+    red_draw.text((30, height - 80), str(datetime.datetime.now()))
 
     return SimpleNamespace(red=red_image, black=black_image)
 
