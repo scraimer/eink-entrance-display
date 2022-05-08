@@ -12,7 +12,6 @@ def extract_shabbat_times(html:str):
     # * The words "צאת השבת"
     eight_thirty = soup.find(lambda tag:tag.name=="span" and "8:30" in tag.text)
     eight_thirty_div = eight_thirty.find_parent("div")
-    #first_column_div = eight_thirty_div.prev_sibling
     first_column_div = eight_thirty_div
     print (first_column_div)
     END_OF_SHABBAT_TEXT = "צאת השבת וערבית"
@@ -33,24 +32,38 @@ def extract_shabbat_times(html:str):
         if col == end_column_div:
             break
 
-    # Turn the columns into lists of texts
-    text_cols = []
-    for col in cols:
-        texts = col.findAll(text=True)
-        for t in texts:
-            t = t.strip()
-            #print(f"'>{t}<'")
-        text_cols.append([t.strip().replace('\u200b','') for t in col.findAll(text=True)])
+    def cols_to_pivot_table(cols):
+        # Turn the columns into lists of texts
+        text_cols = []
+        for col in cols:
+            if not col:
+                continue
+            texts = col.findAll(text=True)
+            for t in texts:
+                t = t.strip()
+                #print(f"'>{t}<'")
+            text_cols.append([t.strip().replace('\u200b','') for t in col.findAll(text=True)])
 
-    # Pivot the columns into rows
-    rows_count = max([len(col) for col in cols])
-    rows = []
-    for i in range(0,rows_count):
-        row = [col[i] if i < len(col) else '' for col in text_cols]
-        # Skip rows of empty data
-        if all([not x for x in row]):
-            continue
-        rows.append(row)
+        # Pivot the columns into rows
+        rows_count = max([len(col) for col in cols])
+        rows = []
+        for i in range(0,rows_count):
+            row = [col[i] if i < len(col) else '' for col in text_cols]
+            # Skip rows of empty data
+            if all([not x for x in row]):
+                continue
+            rows.append(row)
+        return rows
+
+    # The early shabbat data is in a different DOM layout
+    early_shabbat_div = eight_thirty_div.previous_sibling
+    early_time = early_shabbat_div.find(lambda tag:":" in tag.text)
+    #early_time_parent = early_time.find_parent("div").parent
+    #early_time_parent = early_time.find_parent("div")
+    early_time_parent = early_time
+    et_cols = early_time_parent.find("div")
+
+    rows = [*cols_to_pivot_table(et_cols), *cols_to_pivot_table(cols)]
 
     # Look for the word "פרשת "
     PARASHAT_TEXT = "פרשת "
