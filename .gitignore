@@ -6,3 +6,6 @@ logs
 __pycache__/
 lib/waveshare_epd/epd7in5b_HD.pyc
 .ipynb_checkpoints/
+lib/waveshare_epd/__init__.pyc
+lib/waveshare_epd/epdconfig.pyc
+
