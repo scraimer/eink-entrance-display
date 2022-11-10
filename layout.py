@@ -35,16 +35,21 @@ def image_to_mono(src:Image.Image):
     fn = lambda x : 255 if x > THRESH else 0
     return src.convert('L').point(fn, mode='1')
 
-def download_image(url:str) -> Image.Image:
-    return Image.open(requests.get(url, stream=True).raw)
+def render_image(color:str):
+    URL_BASE = "http://hinge-iot:8321/render/"
+    requests.get(URL_BASE + color)
+
+def download_image(color:str) -> Image.Image:
+    URL_BASE = "http://hinge-iot:8321/eink/"
+    return Image.open(requests.get(URL_BASE + color, stream=True).raw)
 
 def make_image() -> EinkImage:
-    # TODO: trigger the image generation, then fetch it.
-    URL_BASE = "http://hinge-iot:8321/eink/"
-    SRC_URL_RED = URL_BASE + "red"
-    SRC_URL_BLACK = URL_BASE + "black"
-    red_image = image_to_mono(download_image(SRC_URL_RED))
-    black_image = image_to_mono(download_image(SRC_URL_BLACK))
+    print("Rendering 'red'")
+    render_image("red")
+    print("Rendering 'black'")
+    render_image("black")
+    red_image = image_to_mono(download_image("red"))
+    black_image = image_to_mono(download_image("black"))
     out = EinkImage(red=red_image, black=black_image)
 
     # XXX: Debug, save to file
