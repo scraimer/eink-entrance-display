@@ -37,10 +37,12 @@ def image_to_mono(src:Image.Image):
 
 def render_image(color:str):
     URL_BASE = "http://hinge-iot:8321/render/"
+    URL_BASE = "http://10.5.1.20:8321/render/"
     requests.get(URL_BASE + color)
 
 def download_image(color:str) -> Image.Image:
     URL_BASE = "http://hinge-iot:8321/eink/"
+    URL_BASE = "http://10.5.1.20:8321/eink/"
     return Image.open(requests.get(URL_BASE + color, stream=True).raw)
 
 def make_image() -> EinkImage:
