@@ -1,11 +1,39 @@
-
-import sys
-import os
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor, ImageMath, ImageOps
 import datetime
 from dataclasses import dataclass
+from enum import Enum
+import os
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor, ImageMath, ImageOps
 import requests
+import sys
+from textwrap import wrap
+import traceback
+
    
+EINK_WIDTH = 528
+EINK_HEIGHT = 880
+FONTDIR = Path(os.path.dirname(os.path.realpath(__file__)))
+
+
+class MakeImageStage(Enum):
+    INITIALIZATION = 1
+    RENDER = 2
+    DOWNLOAD = 3
+    AFTER_DOWNLOAD = 4
+
+
+def error_image(ex: Exception, stage:MakeImageStage) -> Image:
+    font = ImageFont.truetype(str(FONTDIR / 'arial.ttf'), 50)
+    image = Image.new('1', (EINK_WIDTH, EINK_HEIGHT), 255)  # 255: clear the frame
+    draw = ImageDraw.Draw(image)
+    msg_raw = f"Error during stage {stage}: {ex}"
+    msg = "\n".join(wrap(msg_raw, width=60))
+    box = font.getbbox(msg)
+    x = 20
+    y = 20
+    draw.text((x, y), msg, fill=0)
+    return image
+
 
 def join_image(source_red:Image, source_black:Image):
     red_rgb = ImageMath.eval("convert(a,'RGB')", a=source_red)
@@ -45,13 +73,24 @@ def download_image(color:str) -> Image.Image:
     URL_BASE = "http://10.5.1.20:8321/eink/"
     return Image.open(requests.get(URL_BASE + color, stream=True).raw)
 
+
 def make_image() -> EinkImage:
-    print("Rendering 'red'")
-    render_image("red")
-    print("Rendering 'black'")
-    render_image("black")
-    red_image = image_to_mono(download_image("red"))
-    black_image = image_to_mono(download_image("black"))
+    stage = MakeImageStage.INITIALIZATION
+    try:
+        stage = MakeImageStage.RENDER
+        print("Rendering 'red'")
+        render_image("red")
+        print("Rendering 'black'")
+        render_image("black")
+
+        stage = MakeImageStage.DOWNLOAD
+        red_image = image_to_mono(download_image("red"))
+        black_image = image_to_mono(download_image("black"))
+        stage = MakeImageStage.AFTER_DOWNLOAD
+    except Exception as ex:
+        traceback.print_exc()
+        red_image = error_image(ex, stage)
+        black_image = error_image(ex, stage)
     out = EinkImage(red=red_image, black=black_image)
 
     # XXX: Debug, save to file
@@ -59,4 +98,7 @@ def make_image() -> EinkImage:
     color_image.save("color.png")
 
     return out
+
+if __name__ == "__main__":
+    make_image()
 
