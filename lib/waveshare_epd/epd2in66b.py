@@ -4,8 +4,8 @@
 # * | Function    :   Electronic paper driver
 # * | Info        :
 # *----------------
-# * | This version:   V1.0
-# * | Date        :   2020-12-01
+# * | This version:   V1.1
+# * | Date        :   2022-08-9
 # # | Info        :   python demo
 # -----------------------------------------------------------------------------
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,6 +33,8 @@ from . import epdconfig
 # Display resolution
 EPD_WIDTH       = 152
 EPD_HEIGHT      = 296
+
+logger = logging.getLogger(__name__)
 
 class EPD:
     def __init__(self):
@@ -66,12 +68,19 @@ class EPD:
         epdconfig.spi_writebyte([data])
         epdconfig.digital_write(self.cs_pin, 1)
 
+    # send a lot of data   
+    def send_data2(self, data):
+        epdconfig.digital_write(self.dc_pin, 1)
+        epdconfig.digital_write(self.cs_pin, 0)
+        epdconfig.spi_writebyte2(data)
+        epdconfig.digital_write(self.cs_pin, 1)
+
 
     def ReadBusy(self):
-        logging.debug("e-Paper busy")
+        logger.debug("e-Paper busy")
         while(epdconfig.digital_read(self.busy_pin) == 1):      #  0: idle, 1: busy
             epdconfig.delay_ms(20) 
-        logging.debug("e-Paper busy release") 
+        logger.debug("e-Paper busy release") 
 
 
     def init(self):
@@ -99,44 +108,44 @@ class EPD:
         return 0
 
     def setWindows(self, Xstart, Ystart, Xend, Yend):
-        self.send_command(0x44); # SET_RAM_X_ADDRESS_START_END_POSITION
-        self.send_data((Xstart>>3) & 0x1F);
-        self.send_data((Xend>>3) & 0x1F);
+        self.send_command(0x44) # SET_RAM_X_ADDRESS_START_END_POSITION
+        self.send_data((Xstart>>3) & 0x1F)
+        self.send_data((Xend>>3) & 0x1F)
         
-        self.send_command(0x45); # SET_RAM_Y_ADDRESS_START_END_POSITION
-        self.send_data(Ystart & 0xFF);
-        self.send_data((Ystart >> 8) & 0x01);
-        self.send_data(Yend & 0xFF);
-        self.send_data((Yend >> 8) & 0x01);
+        self.send_command(0x45) # SET_RAM_Y_ADDRESS_START_END_POSITION
+        self.send_data(Ystart & 0xFF)
+        self.send_data((Ystart >> 8) & 0x01)
+        self.send_data(Yend & 0xFF)
+        self.send_data((Yend >> 8) & 0x01)
 
     def setCursor(self, Xstart, Ystart):
-        self.send_command(0x4E); # SET_RAM_X_ADDRESS_COUNTER
-        self.send_data(Xstart & 0x1F);
+        self.send_command(0x4E) # SET_RAM_X_ADDRESS_COUNTER
+        self.send_data(Xstart & 0x1F)
 
-        self.send_command(0x4F); # SET_RAM_Y_ADDRESS_COUNTER
-        self.send_data(Ystart & 0xFF);
-        self.send_data((Ystart >> 8) & 0x01);
+        self.send_command(0x4F) # SET_RAM_Y_ADDRESS_COUNTER
+        self.send_data(Ystart & 0xFF)
+        self.send_data((Ystart >> 8) & 0x01)
         
     def turnon_display(self):
         self.send_command(0x20)
         self.ReadBusy()
 
     def getbuffer(self, image):
-        # logging.debug("bufsiz = ",int(self.width/8) * self.height)
+        # logger.debug("bufsiz = ",int(self.width/8) * self.height)
         buf = [0xFF] * (int(self.width/8) * self.height)
         image_monocolor = image.convert('1')
         imwidth, imheight = image_monocolor.size
         pixels = image_monocolor.load()
-        # logging.debug("imwidth = %d, imheight = %d",imwidth,imheight)
+        # logger.debug("imwidth = %d, imheight = %d",imwidth,imheight)
         if(imwidth == self.width and imheight == self.height):
-            logging.debug("Vertical")
+            logger.debug("Vertical")
             for y in range(imheight):
                 for x in range(imwidth):
                     # Set the bits for the column of pixels at the current position.
                     if pixels[x, y] == 0:
                         buf[int((x + y * self.width) / 8)] &= ~(0x80 >> (x % 8))
         elif(imwidth == self.height and imheight == self.width):
-            logging.debug("Horizontal")
+            logger.debug("Horizontal")
             for y in range(imheight):
                 for x in range(imwidth):
                     newx = y
@@ -147,38 +156,30 @@ class EPD:
 
     def display(self, Blackimage, Redimage):
         if (Blackimage == None or Redimage == None):
-            return            
-
-        self.send_command(0x4E)
-        self.send_data(0x01)
-        self.send_command(0x4F)
-        self.send_data(0x27)
-        self.send_data(0x01)
-
+            return   
+        Redimage_1 = [0x00] * len(Redimage)
+        for i in range(len(Redimage)) :
+            Redimage_1[i] = ~Redimage[i]    
         self.send_command(0x24)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(Blackimage[i + j * int(self.width / 8)])   
+        self.send_data2(Blackimage) 
 
         self.send_command(0x26)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(~Redimage[i + j * int(self.width / 8)]) 
+        self.send_data2(Redimage_1) 
                 
         self.turnon_display()
         
 
     def Clear(self):
+        if self.width%8 == 0:
+            linewidth = int(self.width/8)
+        else:
+            linewidth = int(self.width/8) + 1
 
         self.send_command(0x24)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(0xff)   
+        self.send_data2([0xff] * int(self.height * linewidth)) 
 
         self.send_command(0x26)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(0x00) 
+        self.send_data2([0x00] * int(self.height * linewidth))
 
         self.turnon_display()
 
@@ -187,7 +188,7 @@ class EPD:
         self.send_command(0X10) # DEEP_SLEEP_MODE
         self.send_data(0x01)
 
-    def Dev_exit(self):
+        epdconfig.delay_ms(2000)
         epdconfig.module_exit()
 
 ### END OF FILE ###
