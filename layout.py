@@ -94,8 +94,8 @@ def make_image() -> EinkImage:
     out = EinkImage(red=red_image, black=black_image)
 
     # XXX: Debug, save to file
-    color_image = join_image(source_black=black_image, source_red=red_image)
-    color_image.save("color.png")
+    # color_image = join_image(source_black=black_image, source_red=red_image)
+    # color_image.save("color.png")
 
     return out
 

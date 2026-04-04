@@ -9,7 +9,6 @@ if os.path.exists(libdir):
 import logging
 from waveshare_epd import epd7in5b_HD
 import time
-import traceback
 from layout import make_image
 
 logging.basicConfig(level=logging.DEBUG)
