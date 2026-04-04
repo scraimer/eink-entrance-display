@@ -102,7 +102,7 @@ def should_update_display_and_update_timestamp():
         return False
 
 
-def display(image):
+def display(image) -> None:
     try:
         epd = epd7in5b_HD.EPD()
         # TODO: assert that epd.height == 880 and epd.width == 528
