@@ -9,3 +9,4 @@ lib/waveshare_epd/epd7in5b_HD.pyc
 lib/waveshare_epd/__init__.pyc
 lib/waveshare_epd/epdconfig.pyc
 
+/display_cache.json
