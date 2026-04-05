@@ -122,7 +122,7 @@ def display(image: EinkImage) -> None:
         epd.sleep()
         time.sleep(3)
         
-        epd.Dev_exit()
+        epd7in5b_HD.epdconfig.module_exit()
         
     except IOError as e:
         logging.info(e)
