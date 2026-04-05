@@ -3,5 +3,5 @@
 set -ex
 
 cd /home/pi/eink-entrance-display
-sudo /usr/bin/python3 display.py
+sudo /usr/bin/python3 main.py
 
