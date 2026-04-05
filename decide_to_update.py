@@ -90,3 +90,8 @@ def should_update_display_and_update_timestamp():
         save_cache_timestamp()
         return False
 
+if __name__ == "__main__":
+    if should_update_display_and_update_timestamp():
+        logging.info("Cache updated - display should refresh")
+    else:
+        logging.info("Cache not updated - skipping display refresh")

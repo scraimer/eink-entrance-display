@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false
 from dataclasses import dataclass
 from enum import Enum
 import os
@@ -34,17 +35,17 @@ def error_image(ex: Exception, stage:MakeImageStage) -> Image.Image:
 
 
 def join_image(source_red:Image.Image, source_black:Image.Image) -> Image.Image:
-    red_rgb: Image.Image = ImageMath.eval("convert(a,'RGB')", a=source_red)
+    red_rgb: Image.Image = ImageMath.eval("convert(a,'RGB')", a=source_red) # type: ignore
     red_mask, _, _ = red_rgb.split()
     red_inverted = ImageOps.invert(red_rgb)
     red_r,red_g,red_b = red_inverted.split()
     #zero = ImageMath.eval("convert(band ^ band,'L')", band=red_g)
 
-    black_r, black_g, black_b = (ImageMath.eval("convert(img,'RGB')", img=source_black)).split()
+    black_r, black_g, black_b = (ImageMath.eval("convert(img,'RGB')", img=source_black)).split() # type: ignore
 
-    out_r: Image.Image = ImageMath.eval("convert(red | black, 'L')", red=red_r, black=black_r, red_mask=red_mask)
-    out_b: Image.Image = ImageMath.eval("convert((black & red_mask), 'L')", red=red_b, black=black_b, red_mask=red_mask)
-    out_g: Image.Image = ImageMath.eval("convert((black & red_mask), 'L')", red=red_g, black=black_g, red_mask=red_mask)
+    out_r: Image.Image = ImageMath.eval("convert(red | black, 'L')", red=red_r, black=black_r, red_mask=red_mask) # type: ignore
+    out_b: Image.Image = ImageMath.eval("convert((black & red_mask), 'L')", red=red_b, black=black_b, red_mask=red_mask) # type: ignore
+    out_g: Image.Image = ImageMath.eval("convert((black & red_mask), 'L')", red=red_g, black=black_g, red_mask=red_mask) # type: ignore
 
     out: Image.Image = Image.merge("RGB", (out_r,out_b,out_g))
     return out
@@ -69,7 +70,8 @@ def render_image(color:str):
 def download_image(color:str) -> Image.Image:
     #URL_BASE = "http://hinge-iot:8321/eink/"
     URL_BASE = "http://10.5.1.20:8321/eink/"
-    return Image.open(requests.get(URL_BASE + color, stream=True).raw)
+    response = requests.get(URL_BASE + color, stream=True)
+    return Image.open(response.raw) # pyright: ignore[reportArgumentType]
 
 
 def make_image() -> EinkImage:

@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportAttributeAccessIssue=false, reportUnusedVariable=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportOptionalSubscript=false
 # *****************************************************************************
 # * | File        :	  epd7in5bc_HD.py
 # * | Author      :   Waveshare team
@@ -29,6 +30,7 @@
 
 
 import logging
+from PIL import Image
 from . import epdconfig
 
 # Display resolution
@@ -136,7 +138,7 @@ class EPD:
         
         return 0
 
-    def getbuffer(self, image) -> list[int]:
+    def getbuffer(self, image: Image.Image) -> list[int]:
         # logger.debug("bufsiz = ",int(self.width/8) * self.height)
         buf = [0xFF] * (int(self.width/8) * self.height)
         image_monocolor = image.convert('1')
