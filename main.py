@@ -11,6 +11,7 @@ def main():
         logging.info("Cache updated - generating and displaying image")
         image = layout.make_image()
         display.display(image)
+        decide_to_update.on_successful_update()
     else:
         logging.info("Cache not updated - skipping display refresh")
         
