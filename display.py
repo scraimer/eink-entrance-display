@@ -9,7 +9,7 @@ if os.path.exists(libdir):
 import logging
 from waveshare_epd import epd7in5b_HD
 import time
-from layout import make_image
+from layout import EinkImage, make_image
 import json
 import requests
 from datetime import datetime
@@ -102,7 +102,7 @@ def should_update_display_and_update_timestamp():
         return False
 
 
-def display(image) -> None:
+def display(image: EinkImage) -> None:
     try:
         epd = epd7in5b_HD.EPD()
         # TODO: assert that epd.height == 880 and epd.width == 528

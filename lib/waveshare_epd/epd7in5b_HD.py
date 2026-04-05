@@ -55,7 +55,7 @@ class EPD:
         epdconfig.digital_write(self.reset_pin, 1)
         epdconfig.delay_ms(200)   
 
-    def send_command(self, command):
+    def send_command(self, command: int):
         epdconfig.digital_write(self.dc_pin, 0)
         epdconfig.digital_write(self.cs_pin, 0)
         epdconfig.spi_writebyte([command])
@@ -136,7 +136,7 @@ class EPD:
         
         return 0
 
-    def getbuffer(self, image):
+    def getbuffer(self, image) -> list[int]:
         # logger.debug("bufsiz = ",int(self.width/8) * self.height)
         buf = [0xFF] * (int(self.width/8) * self.height)
         image_monocolor = image.convert('1')
@@ -160,7 +160,7 @@ class EPD:
                         buf[int((newx + newy*self.width) / 8)] &= ~(0x80 >> (y % 8))
         return buf
 
-    def display(self, imageblack, imagered):
+    def display(self, imageblack: list[int], imagered: list[int]) -> None:
         self.send_command(0x4F) 
         self.send_data(0xAf)
         

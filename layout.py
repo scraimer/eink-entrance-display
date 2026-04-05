@@ -1,11 +1,9 @@
-import datetime
 from dataclasses import dataclass
 from enum import Enum
 import os
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageColor, ImageMath, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageMath, ImageOps
 import requests
-import sys
 from textwrap import wrap
 import traceback
 
@@ -22,7 +20,7 @@ class MakeImageStage(Enum):
     AFTER_DOWNLOAD = 4
 
 
-def error_image(ex: Exception, stage:MakeImageStage) -> Image:
+def error_image(ex: Exception, stage:MakeImageStage) -> Image.Image:
     font = ImageFont.truetype(str(FONTDIR / 'arial.ttf'), 50)
     image = Image.new('1', (EINK_WIDTH, EINK_HEIGHT), 255)  # 255: clear the frame
     draw = ImageDraw.Draw(image)
@@ -35,8 +33,8 @@ def error_image(ex: Exception, stage:MakeImageStage) -> Image:
     return image
 
 
-def join_image(source_red:Image, source_black:Image):
-    red_rgb = ImageMath.eval("convert(a,'RGB')", a=source_red)
+def join_image(source_red:Image.Image, source_black:Image.Image) -> Image.Image:
+    red_rgb: Image.Image = ImageMath.eval("convert(a,'RGB')", a=source_red)
     red_mask, _, _ = red_rgb.split()
     red_inverted = ImageOps.invert(red_rgb)
     red_r,red_g,red_b = red_inverted.split()
@@ -44,11 +42,11 @@ def join_image(source_red:Image, source_black:Image):
 
     black_r, black_g, black_b = (ImageMath.eval("convert(img,'RGB')", img=source_black)).split()
 
-    out_r = ImageMath.eval("convert(red | black, 'L')", red=red_r, black=black_r, red_mask=red_mask)
-    out_b = ImageMath.eval("convert((black & red_mask), 'L')", red=red_b, black=black_b, red_mask=red_mask)
-    out_g = ImageMath.eval("convert((black & red_mask), 'L')", red=red_g, black=black_g, red_mask=red_mask)
+    out_r: Image.Image = ImageMath.eval("convert(red | black, 'L')", red=red_r, black=black_r, red_mask=red_mask)
+    out_b: Image.Image = ImageMath.eval("convert((black & red_mask), 'L')", red=red_b, black=black_b, red_mask=red_mask)
+    out_g: Image.Image = ImageMath.eval("convert((black & red_mask), 'L')", red=red_g, black=black_g, red_mask=red_mask)
 
-    out = Image.merge("RGB", (out_r,out_b,out_g))
+    out: Image.Image = Image.merge("RGB", (out_r,out_b,out_g))
     return out
 
 
@@ -64,12 +62,12 @@ def image_to_mono(src:Image.Image):
     return src.convert('L').point(fn, mode='1')
 
 def render_image(color:str):
-    URL_BASE = "http://hinge-iot:8321/render/"
+    #URL_BASE = "http://hinge-iot:8321/render/"
     URL_BASE = "http://10.5.1.20:8321/render/"
     requests.get(URL_BASE + color)
 
 def download_image(color:str) -> Image.Image:
-    URL_BASE = "http://hinge-iot:8321/eink/"
+    #URL_BASE = "http://hinge-iot:8321/eink/"
     URL_BASE = "http://10.5.1.20:8321/eink/"
     return Image.open(requests.get(URL_BASE + color, stream=True).raw)
 
