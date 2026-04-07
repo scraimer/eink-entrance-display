@@ -70,7 +70,13 @@ def render_image(color:str):
     URL_BASE = "http://10.5.1.20:8321/render/"
     url = URL_BASE + color
     logging.info(f"Rendering image: {url}")
-    response = requests.get(url, timeout=10)
+    
+    try:
+        response = requests.get(url, timeout=10)
+    except requests.Timeout as e:
+        logging.warning(f"Timeout rendering {color} image. Retrying once...")
+        response = requests.get(url, timeout=10)
+    
     if response.status_code != 200:
         logging.error(f"Failed to render {color} image."
                       f" Reading from {url} returned status code {response.status_code}")
@@ -81,9 +87,15 @@ def download_image(color:str) -> Image.Image:
     URL_BASE = "http://10.5.1.20:8321/eink/"
     url = URL_BASE + color
     logging.info(f"Downloading image: {url}")
-    response = requests.get(url, timeout=10)
+
+    try:
+        response = requests.get(url, timeout=10)
+    except requests.Timeout as e:
+        logging.warning(f"Timeout downloading {color} image. Retrying once...")
+        response = requests.get(url, timeout=10)
+
     if response.status_code != 200:
-        logging.error(f"Failed to render {color} image."
+        logging.error(f"Failed to download {color} image."
                       f" Reading from {url} returned status code {response.status_code}")
     response.raise_for_status()
     
