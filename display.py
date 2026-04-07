@@ -11,8 +11,6 @@ from waveshare_epd import epd7in5b_HD
 import time
 from layout import EinkImage
 
-logging.basicConfig(level=logging.DEBUG)
-
 def display(image: EinkImage) -> None:
     try:
         epd = epd7in5b_HD.EPD()
@@ -34,6 +32,7 @@ def display(image: EinkImage) -> None:
         time.sleep(3)
         
         epd7in5b_HD.epdconfig.module_exit()
+        #epd7in5b_HD.epdconfig.implementation.module_exit()
         
     except IOError as e:
         logging.info(e)
@@ -42,4 +41,12 @@ def display(image: EinkImage) -> None:
         logging.info("ctrl + c:")
         epd7in5b_HD.epdconfig.module_exit()
         exit()
- 
+
+
+if __name__ == "__main__":
+    # When running display as stand-alone, configure basic logging
+    logging.basicConfig(level=logging.DEBUG)
+
+    # run something   
+    
+    logging.info("display.py started standalone")

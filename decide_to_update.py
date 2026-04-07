@@ -4,8 +4,6 @@ import logging
 from pathlib import Path
 import requests
 
-logging.basicConfig(level=logging.DEBUG)
-
 STATE_FILE = Path(__file__).parent / "display_state.json"
 WHAT_HAS_CHANGED_URL = "http://10.5.1.20:8321/what-has-changed"
 TIMESTAMP_FORMAT = "%Y%m%d-%H%M%S"
