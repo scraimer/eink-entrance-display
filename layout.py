@@ -71,6 +71,9 @@ def render_image(color:str):
     url = URL_BASE + color
     logging.info(f"Rendering image: {url}")
     response = requests.get(url, timeout=10)
+    if response.status_code != 200:
+        logging.error(f"Failed to render {color} image."
+                      f" Reading from {url} returned status code {response.status_code}")
     response.raise_for_status()
 
 def download_image(color:str) -> Image.Image:
@@ -79,6 +82,9 @@ def download_image(color:str) -> Image.Image:
     url = URL_BASE + color
     logging.info(f"Downloading image: {url}")
     response = requests.get(url, timeout=10)
+    if response.status_code != 200:
+        logging.error(f"Failed to render {color} image."
+                      f" Reading from {url} returned status code {response.status_code}")
     response.raise_for_status()
     
     try:
