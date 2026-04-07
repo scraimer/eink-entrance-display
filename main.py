@@ -47,7 +47,10 @@ def main():
             logging.info("Cache updated - generating and displaying image")
             image = layout.make_image()
             display.display(image)
-            decide_to_update.on_successful_update()
+            if (image.is_red_an_error_image or image.is_black_an_error_image):
+                logging.warning("Displayed image contains error image(s) - not updating timestamp")
+            else:
+                decide_to_update.on_successful_update()
         else:
             logging.info("Cache not updated - skipping display refresh")
     except Exception as e:

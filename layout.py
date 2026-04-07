@@ -56,6 +56,8 @@ def join_image(source_red:Image.Image, source_black:Image.Image) -> Image.Image:
 class EinkImage:
     red : Image.Image
     black : Image.Image
+    is_red_an_error_image : bool = False
+    is_black_an_error_image : bool = False
 
 
 def image_to_mono(src:Image.Image):
@@ -100,6 +102,8 @@ def make_image() -> EinkImage:
     stage = MakeImageStage.INITIALIZATION
     red_image = None
     black_image = None
+    red_has_error = False
+    black_has_error = False
     
     try:
         stage = MakeImageStage.RENDER
@@ -117,6 +121,7 @@ def make_image() -> EinkImage:
             logging.error(f"Failed to download red image: {ex}")
             logging.error(traceback.format_exc())
             red_image = error_image(ex, stage)
+            red_has_error = True
         
         try:
             logging.info("Downloading black image")
@@ -126,6 +131,7 @@ def make_image() -> EinkImage:
             logging.error(f"Failed to download black image: {ex}")
             logging.error(traceback.format_exc())
             black_image = error_image(ex, stage)
+            black_has_error = True
         
         stage = MakeImageStage.AFTER_DOWNLOAD
         
@@ -134,10 +140,16 @@ def make_image() -> EinkImage:
         logging.error(traceback.format_exc())
         if red_image is None:
             red_image = error_image(ex, stage)
+            red_has_error = True
         if black_image is None:
             black_image = error_image(ex, stage)
+            black_has_error = True
     
-    out = EinkImage(red=red_image, black=black_image)
+    out = EinkImage(
+        red=red_image,
+        black=black_image,
+        is_red_an_error_image=red_has_error,
+        is_black_an_error_image=black_has_error)
 
     # XXX: Debug, save to file
     # color_image = join_image(source_black=black_image, source_red=red_image)
