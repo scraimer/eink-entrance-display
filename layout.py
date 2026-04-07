@@ -1,6 +1,7 @@
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownLambdaType=false
 from dataclasses import dataclass
 from enum import Enum
+import logging
 import os
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageMath, ImageOps
@@ -65,32 +66,77 @@ def image_to_mono(src:Image.Image):
 def render_image(color:str):
     #URL_BASE = "http://hinge-iot:8321/render/"
     URL_BASE = "http://10.5.1.20:8321/render/"
-    requests.get(URL_BASE + color)
+    url = URL_BASE + color
+    logging.info(f"Rendering image: {url}")
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
 
 def download_image(color:str) -> Image.Image:
     #URL_BASE = "http://hinge-iot:8321/eink/"
     URL_BASE = "http://10.5.1.20:8321/eink/"
-    response = requests.get(URL_BASE + color, stream=True)
-    return Image.open(response.raw) # pyright: ignore[reportArgumentType]
+    url = URL_BASE + color
+    logging.info(f"Downloading image: {url}")
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    
+    try:
+        from io import BytesIO
+        image_data = BytesIO(response.content)
+        return Image.open(image_data)
+    except Exception as e:
+        # Log first 1000 bytes of response for debugging
+        try:
+            raw_data = response.content[:1000]
+            # Escape binary data for readable logging using repr
+            escaped_data = repr(raw_data)
+            logging.error(f"Failed to open image from {url}: {e}")
+            logging.error(f"First 1000 bytes of response: {escaped_data}")
+        except Exception as log_ex:
+            logging.error(f"Failed to log raw data: {log_ex}")
+        raise
 
 
 def make_image() -> EinkImage:
     stage = MakeImageStage.INITIALIZATION
+    red_image = None
+    black_image = None
+    
     try:
         stage = MakeImageStage.RENDER
-        print("Rendering 'red'")
+        logging.info("Rendering 'red'")
         render_image("red")
-        print("Rendering 'black'")
+        logging.info("Rendering 'black'")
         render_image("black")
 
         stage = MakeImageStage.DOWNLOAD
-        red_image = image_to_mono(download_image("red"))
-        black_image = image_to_mono(download_image("black"))
+        try:
+            logging.info("Downloading red image")
+            red_image = image_to_mono(download_image("red"))
+            logging.info("Red image downloaded successfully")
+        except Exception as ex:
+            logging.error(f"Failed to download red image: {ex}")
+            logging.error(traceback.format_exc())
+            red_image = error_image(ex, stage)
+        
+        try:
+            logging.info("Downloading black image")
+            black_image = image_to_mono(download_image("black"))
+            logging.info("Black image downloaded successfully")
+        except Exception as ex:
+            logging.error(f"Failed to download black image: {ex}")
+            logging.error(traceback.format_exc())
+            black_image = error_image(ex, stage)
+        
         stage = MakeImageStage.AFTER_DOWNLOAD
+        
     except Exception as ex:
-        traceback.print_exc()
-        red_image = error_image(ex, stage)
-        black_image = error_image(ex, stage)
+        logging.error(f"Exception in make_image: {ex}")
+        logging.error(traceback.format_exc())
+        if red_image is None:
+            red_image = error_image(ex, stage)
+        if black_image is None:
+            black_image = error_image(ex, stage)
+    
     out = EinkImage(red=red_image, black=black_image)
 
     # XXX: Debug, save to file
