@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import logging
 from pathlib import Path
@@ -10,10 +10,10 @@ TIMESTAMP_FORMAT = "%Y%m%d-%H%M%S"
 UNIX_EPOCH_TIMESTAMP = "19700101-000000"  # 1970-01-01 00:00:00
 
 
-def _load_datetime_of_last_update():
+def _load_datetime_of_last_update() -> str:
     """Load the last display update timestamp from state file.
     
-    Returns the timestamp string in format YYYYMMDD-HHMMSS.
+    Returns the timestamp string in format YYYYMMDD-HHMMSS (UTC).
     If file doesn't exist, returns Unix epoch (1970-01-01 00:00:00).
     """
     try:
@@ -27,13 +27,16 @@ def _load_datetime_of_last_update():
 
 
 def _save_datetime_of_last_update():
-    """Save the current timestamp to state file."""
+    """Save the current UTC timestamp and timezone to state file."""
     try:
-        now = datetime.now().strftime(TIMESTAMP_FORMAT)
-        data = {'last_updated_at': now}
+        now_utc = datetime.now(timezone.utc).strftime(TIMESTAMP_FORMAT)
+        data = {
+            'last_updated_at': now_utc,
+            'timezone': 'UTC'
+        }
         with open(STATE_FILE, 'w') as f:
             json.dump(data, f, indent=2)
-        logging.info(f"Last update timestamp updated to {now}")
+        logging.info(f"Last update timestamp updated to {now_utc} (UTC)")
     except Exception as e:
         logging.error(f"Failed to save state file: {e}")
 
@@ -59,7 +62,7 @@ def should_update_display_and_update_timestamp():
         params['client_last_updated_at'] = last_timestamp
         url = f"{WHAT_HAS_CHANGED_URL}?client_last_updated_at={last_timestamp}"
             
-        logging.info(f"Checking what has changed: {url}")
+        logging.info(f"Checking what has changed: {url} (UTC)")
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         
