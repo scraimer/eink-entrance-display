@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import logging
 from pathlib import Path
 import requests
+from typing import Any
 
 STATE_FILE = Path(__file__).parent / "display_state.json"
 WHAT_HAS_CHANGED_URL = "http://10.5.1.20:8321/what-has-changed"
@@ -62,6 +63,48 @@ def _save_state(state: MyState):
         logging.error(f"Failed to save state file: {e}")
 
 
+def _decide(state: MyState, what_has_changed: dict[str, Any]) -> bool:
+        previous_relevance = state.data_relevance
+    
+        changes = what_has_changed.get('changes', {})
+        
+        # Extract current relevance status for all data sources
+        current_relevance = {
+            key: item.get('is_relevant_to_display', False)
+            for key, item in changes.items()
+        }
+        
+        # Check if any data source changed and is relevant
+        has_changed_and_relevant = any(
+            item.get('has_changed', False) and item.get('is_relevant_to_display', False)
+            for item in changes.values()
+        )
+        
+        # Check if any relevance switched
+        relevance_switched = any(
+            previous_relevance.get(key, False) != current_relevance[key]
+            for key in current_relevance.keys()
+        )
+        
+        should_update = has_changed_and_relevant or relevance_switched
+        
+        logging.info(f"Changes status: should_update={should_update}")
+        logging.debug(f"  has_changed_and_relevant={has_changed_and_relevant}")
+        logging.debug(f"  relevance_switched={relevance_switched}")
+        if changes:
+            for key, item in changes.items():
+                prev_rel = previous_relevance.get(key, False)
+                curr_rel = item.get('is_relevant_to_display', False)
+                switched = "*" if (prev_rel == False and curr_rel == True) else ""
+                logging.debug(f"  {key}: changed={item.get('has_changed')}, relevant={curr_rel} (was {prev_rel}){switched}")
+        
+        return bool(should_update)
+  
+def _since_last_update(state: MyState) -> timedelta:
+    last_timestamp_dt = datetime.strptime(state.last_updated_at, TIMESTAMP_FORMAT).replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - last_timestamp_dt)
+
+
 def should_update_display_and_update_timestamp():
     """Check if relevant data has changed and warrants a display update.
     
@@ -76,8 +119,16 @@ def should_update_display_and_update_timestamp():
     On endpoint failure, returns False (skip display) to be safe.
     """
     state = _load_state()
+    logging.info(f"It's been {_since_last_update(state).total_seconds() // 60} minutes since the last update.")
     last_timestamp = state.last_updated_at
-    previous_relevance = state.data_relevance
+    TOO_LONG = timedelta(hours=1)
+    TOO_SHORT = timedelta(minutes=3)
+    if (_since_last_update(state) > TOO_LONG):
+        logging.info(f"It's been over {TOO_LONG.total_seconds() // 3600} hours since the last update. Forcing an update.")
+        return True
+    if (_since_last_update(state) < TOO_SHORT):
+        logging.info(f"It's been less than {TOO_SHORT.total_seconds() // 60} minutes since the last update. Delaying update.")
+        return False
     
     try:
         # Build the request URL with last update timestamp
@@ -85,43 +136,13 @@ def should_update_display_and_update_timestamp():
             
         logging.info(f"Checking what has changed: {url} (UTC)")
         response = requests.get(url, timeout=10)
+        # TODO: If timeout or error for longer than 12 hours, send critical message to Shalom and reboot.
         response.raise_for_status()
         
         data = response.json()
-        changes = data.get('changes', {})
-        
-        # Extract current relevance status for all data sources
-        current_relevance = {
-            key: item.get('is_relevant_to_display', False)
-            for key, item in changes.items()
-        }
-        
-        # Check if any data source changed and is relevant
-        has_changed_and_relevant = any(
-            item.get('has_changed', False) and item.get('is_relevant_to_display', False)
-            for item in changes.values()
-        )
-        
-        # Check if any relevance switched from false to true
-        relevance_switched_on = any(
-            previous_relevance.get(key, False) == False and current_relevance[key] == True
-            for key in current_relevance.keys()
-        )
-        
-        should_update = has_changed_and_relevant or relevance_switched_on
-        
-        logging.info(f"Changes status: should_update={should_update}")
-        logging.debug(f"  has_changed_and_relevant={has_changed_and_relevant}")
-        logging.debug(f"  relevance_switched_on={relevance_switched_on}")
-        if changes:
-            for key, item in changes.items():
-                prev_rel = previous_relevance.get(key, False)
-                curr_rel = item.get('is_relevant_to_display', False)
-                switched = "*" if (prev_rel == False and curr_rel == True) else ""
-                logging.debug(f"  {key}: changed={item.get('has_changed')}, relevant={curr_rel} (was {prev_rel}){switched}")
-        
-        return bool(should_update)
-        
+        logging.debug(f"Got data:\n{json.dumps(data, indent=3)}")
+        return _decide(state, data)
+       
     except requests.RequestException as e:
         logging.error(f"Failed to check what has changed: {e}")
         # Return False to skip display update (safer than failing open)
@@ -155,8 +176,6 @@ def on_successful_update():
         _save_state(MyState(last_updated_at=datetime.now(timezone.utc).strftime(TIMESTAMP_FORMAT), data_relevance=current_relevance))
     except Exception as e:
         logging.error(f"Failed to update state on successful display update: {e}")
-        # Still save state even if we can't fetch updates
-        _save_state(MyState(last_updated_at=datetime.now(timezone.utc).strftime(TIMESTAMP_FORMAT), data_relevance={}))
 
 if __name__ == "__main__":
     if should_update_display_and_update_timestamp():

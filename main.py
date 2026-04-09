@@ -42,6 +42,9 @@ def _setup_logging():
 
 def main():
     _setup_logging()
+    logging.info("")
+    logging.info("-----------------------------------------------")
+    logging.info("Logging started.")
     try:
         if decide_to_update.should_update_display_and_update_timestamp():
             logging.info("Cache updated - generating and displaying image")
