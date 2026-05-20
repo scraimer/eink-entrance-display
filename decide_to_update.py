@@ -4,6 +4,7 @@ import json
 import logging
 from pathlib import Path
 import requests
+import traceback
 from typing import Any
 
 STATE_FILE = Path(__file__).parent / "display_state.json"
@@ -40,6 +41,7 @@ def _load_state() -> MyState:
                 )
     except Exception as e:
         logging.warning(f"Failed to load state file: {e}")
+        logging.warning(traceback.format_exc())
     return default_state
 
 
@@ -61,6 +63,7 @@ def _save_state(state: MyState):
         logging.info(f"State updated at {now_utc} (UTC)")
     except Exception as e:
         logging.error(f"Failed to save state file: {e}")
+        logging.error(traceback.format_exc())
 
 
 def _decide(state: MyState, what_has_changed: dict[str, Any]) -> bool:
@@ -149,6 +152,7 @@ def should_update_display_and_update_timestamp():
         return False
     except Exception as e:
         logging.error(f"Unexpected error checking what has changed: {e}")
+        logging.error(traceback.format_exc())
         return False
 
 
@@ -176,6 +180,7 @@ def on_successful_update():
         _save_state(MyState(last_updated_at=datetime.now(timezone.utc).strftime(TIMESTAMP_FORMAT), data_relevance=current_relevance))
     except Exception as e:
         logging.error(f"Failed to update state on successful display update: {e}")
+        logging.error(traceback.format_exc())
 
 if __name__ == "__main__":
     if should_update_display_and_update_timestamp():
